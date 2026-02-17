@@ -4,18 +4,12 @@ version: 1
 metadata:
   category: finance
   name: WealthHub
-  description: A modern portfolio management application to track your wealth across assets, cryptocurrencies, and stocks
+  description: Modern portfolio management application to track your wealth
   version: 2.0.0
-  releaseNotes: Docker deployment for Umbrel
   icon: umbrel/icon.svg
   website: https://github.com/marpemad/wealthHub
   repository: https://github.com/marpemad/wealthHub
   support: https://github.com/marpemad/wealthHub/issues
-  submitter: Community
-  submission: https://github.com/marpemad/wealthHub
-
-permissions:
-  - storage
 
 containers:
   main:
@@ -26,7 +20,7 @@ containers:
       - "8787:3000"
     volumes:
       - data:/app/data
-    restart: always
 
 volumes:
   data:
+
