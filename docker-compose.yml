@@ -4,12 +4,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_GAS_URL=${VITE_GAS_URL}
     container_name: wealthhub
     restart: unless-stopped
     ports:
       - "8787:3000"
     environment:
-      - VITE_GAS_URL=${VITE_GAS_URL:-}
+      - VITE_GAS_URL=${VITE_GAS_URL}
     volumes:
       - wealthhub_data:/app/data
 
