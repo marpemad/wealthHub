@@ -2,6 +2,12 @@
 
 A modern, componentized portfolio management application built with Vite, React, TypeScript, and Tailwind CSS.
 
+## Quick Start
+
+- **Local Development**: `npm install && npm run dev` → http://localhost:3000
+- **Production Build**: `npm run build`
+- **Docker/Umbrel**: See [UMBREL.md](UMBREL.md) for installation instructions
+
 ## Project Structure
 
 ```

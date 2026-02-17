@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  wealthhub:
+    image: wealthhub:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wealthhub
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_GAS_URL=${VITE_GAS_URL:-}
+    volumes:
+      - wealthhub_data:/app/data
+    networks:
+      - umbrel
+
+volumes:
+  wealthhub_data:
+
+networks:
+  umbrel:
+    external: true
