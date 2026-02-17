@@ -1,5 +1,6 @@
 import { Asset, HistoryEntry, BitcoinTransaction, StockTransaction } from '../types'
 import { jsPDF } from 'jspdf'
+import { config } from '../config'
 
 export const gasService = {
   async saveData(
@@ -8,7 +9,6 @@ export const gasService = {
     bitcoinTransactions: BitcoinTransaction[],
     stockTransactions: StockTransaction[]
   ) {
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzUaCIspl-QSx4OU_-SDG5XeKpFhfQO869kmilVFHifjC38Pvqk5iDkxvEwxjXV1eMj/exec'
     
     const dataToSend = {
       assets,
@@ -18,7 +18,7 @@ export const gasService = {
       lastUpdated: new Date().toISOString()
     }
 
-    return fetch(GAS_URL, {
+    return fetch(config.gasUrl, {
       method: 'POST',
       mode: 'no-cors',
       headers: {
@@ -29,9 +29,7 @@ export const gasService = {
   },
 
   async fetchData() {
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzUaCIspl-QSx4OU_-SDG5XeKpFhfQO869kmilVFHifjC38Pvqk5iDkxvEwxjXV1eMj/exec'
-    
-    const response = await fetch(GAS_URL)
+    const response = await fetch(config.gasUrl)
     return response.json()
   }
 }

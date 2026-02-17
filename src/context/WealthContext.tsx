@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react'
 import { Asset, HistoryEntry, BitcoinTransaction, StockTransaction, SyncState, Metrics } from '../types'
 import { generateUUID } from '../utils'
-
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzUaCIspl-QSx4OU_-SDG5XeKpFhfQO869kmilVFHifjC38Pvqk5iDkxvEwxjXV1eMj/exec'
+import { config } from '../config'
 
 // Data validation functions
 const sanitizeBitcoinTransactions = (txs: any[]): BitcoinTransaction[] => {
@@ -208,7 +207,7 @@ export const WealthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       try {
         // Intentar cargar desde GAS
         setSyncState(prev => ({ ...prev, isSyncing: true }))
-        const response = await fetch(GAS_URL)
+        const response = await fetch(config.gasUrl)
         const result = await response.json()
 
         if (result.success && result.data && result.data.assets) {
@@ -374,7 +373,7 @@ export const WealthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const loadDataFromGAS = useCallback(async () => {
     try {
-      const response = await fetch(GAS_URL)
+      const response = await fetch(config.gasUrl)
       const result = await response.json()
 
       if (result.success && result.data) {
@@ -417,7 +416,7 @@ export const WealthProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       console.log('📤 Sincronizando datos con GAS...')
-      await fetch(GAS_URL, {
+      await fetch(config.gasUrl, {
         method: 'POST',
         mode: 'no-cors',
         headers: {
