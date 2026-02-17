@@ -7,7 +7,7 @@ services:
       args:
         - VITE_GAS_URL=${VITE_GAS_URL}
     container_name: wealthhub
-    restart: unless-stopped
+    restart: always
     ports:
       - "8787:3000"
     environment:
@@ -17,3 +17,4 @@ services:
 
 volumes:
   wealthhub_data:
+
