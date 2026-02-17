@@ -23,16 +23,8 @@ ssh ubuntu@192.168.1.XXX
 2. **Clonar el repositorio:**
 
 ```bash
-cd ~/umbrel/apps
+cd ~/umbrel/app-data
 git clone https://github.com/marpemad/wealthHub.git
-```
-
-3. **Crear directorio de la app:**
-
-```bash
-mkdir -p ~/umbrel/apps/wealthhub
-cd ~/umbrel/apps/wealthhub
-git clone https://github.com/marpemad/wealthHub.git .
 ```
 
 4. **Configurar variables de entorno:**
@@ -56,7 +48,7 @@ VITE_GAS_URL=https://script.google.com/macros/s/TU_SCRIPT_ID/exec
 5. **Iniciar la aplicación:**
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 6. **Verificar que la app está corriendo:**
