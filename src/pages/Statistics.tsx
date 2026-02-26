@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useWealth } from '../context/WealthContext'
 import { Card } from '../components/ui/Card'
@@ -337,7 +337,7 @@ export default function Statistics() {
                 ).length
 
                 return (
-                  <>
+                  <React.Fragment key={`year-section-${year.year}`}>
                     {/* Year Summary Row */}
                     <tr 
                       key={`year-${year.year}`}
@@ -406,7 +406,7 @@ export default function Statistics() {
                           </tr>
                         )
                       })}
-                  </>
+                  </React.Fragment>
                 )
               })}
             </tbody>

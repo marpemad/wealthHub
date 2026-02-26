@@ -8,6 +8,8 @@ export interface Asset {
   archived: boolean;
   targetAllocation?: number;
   riskLevel?: string;
+  isin?: string;  // ISIN for mutual funds
+  ticker?: string;  // Ticker for stocks and crypto
 }
 
 export interface HistoryEntry {
@@ -51,4 +53,25 @@ export interface Metrics {
   totalProfit: number;
   roi: number;
   liquidez: number;
+}
+
+export interface PriceData {
+  assetId: string;
+  assetName: string;
+  ticker?: string;
+  isin?: string;
+  price: number;
+  currency: string;
+  fetchedAt: string;
+  source: string;
+}
+
+export interface FetchMonthResponse {
+  success: boolean;
+  message: string;
+  year: number;
+  month: number;
+  lastBusinessDay: string;
+  prices: PriceData[];
+  errors: string[];
 }

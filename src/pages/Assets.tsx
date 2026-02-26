@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { Trash2, Edit3, Plus, ArrowUp, ArrowDown, Archive, ArchiveX } from 'lucide-react'
+import { Trash2, Edit3, Plus, ArrowUp, ArrowDown, Archive, ArchiveX, RefreshCw } from 'lucide-react'
 import { useWealth } from '../context/WealthContext'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -8,15 +8,18 @@ import { Modal } from '../components/ui/Modal'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { formatCurrency, generateUUID } from '../utils'
-import type { Asset } from '../types'
+import { config } from '../config'
+import type { Asset, FetchMonthResponse, PriceData } from '../types'
 
 export default function Assets() {
-  const { assets, setAssets, history, saveDataToGAS } = useWealth()
+  const { assets, setAssets, history, setHistory, saveDataToGAS } = useWealth()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null)
   const [sortColumn, setSortColumn] = useState<'name' | 'category' | 'value' | 'percentage'>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [showArchived, setShowArchived] = useState(false)
+  const [isFetchingPrices, setIsFetchingPrices] = useState(false)
+  const [fetchMessage, setFetchMessage] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     category: 'Renta variable',
@@ -24,7 +27,9 @@ export default function Assets() {
     baseAmount: 0,
     targetAllocation: 0,
     riskLevel: 'Medio',
-    archived: false
+    archived: false,
+    isin: '',
+    ticker: ''
   })
 
   const categories = ['Renta variable', 'Efectivo', 'Crypto', 'Stocks', 'Plan de pensiones']
@@ -87,7 +92,9 @@ export default function Assets() {
         baseAmount: defaultBaseAmount,
         targetAllocation: asset.targetAllocation || 0,
         riskLevel: asset.riskLevel || 'Medio',
-        archived: asset.archived || false
+        archived: asset.archived || false,
+        isin: asset.isin || '',
+        ticker: asset.ticker || ''
       })
     } else {
       setEditingAsset(null)
@@ -98,7 +105,9 @@ export default function Assets() {
         baseAmount: 0,
         targetAllocation: 0,
         riskLevel: 'Medio',
-        archived: false
+        archived: false,
+        isin: '',
+        ticker: ''
       })
     }
     setIsModalOpen(true)
@@ -120,7 +129,9 @@ export default function Assets() {
               baseAmount: formData.baseAmount,
               targetAllocation: formData.targetAllocation,
               riskLevel: formData.riskLevel,
-              archived: formData.archived
+              archived: formData.archived,
+              isin: formData.isin || undefined,
+              ticker: formData.ticker || undefined
             }
           : a
       )
@@ -139,7 +150,9 @@ export default function Assets() {
         baseAmount: formData.baseAmount,
         targetAllocation: formData.targetAllocation,
         riskLevel: formData.riskLevel,
-        archived: false
+        archived: false,
+        isin: formData.isin || undefined,
+        ticker: formData.ticker || undefined
       }
       setAssets([...assets, newAsset])
     }
@@ -168,6 +181,82 @@ export default function Assets() {
     return assets.filter(a => a.archived).length
   }
 
+  const handleFetchPrices = async () => {
+    try {
+      setIsFetchingPrices(true)
+      setFetchMessage('Obteniendo precios...')
+
+      // Get current month and year
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = now.getMonth() + 1
+
+      // Call backend API
+      const response = await fetch(
+        `${config.backendUrl}/fetch-month?year=${year}&month=${month}`
+      )
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const result: FetchMonthResponse = await response.json()
+
+      if (result.success) {
+        // Convert prices to history entries
+        const monthStr = `${year}-${String(month).padStart(2, '0')}`
+        const newHistoryEntries = result.prices.map((price: PriceData) => ({
+          id: generateUUID(),
+          month: monthStr,
+          assetId: price.assetId,
+          nav: price.price,
+          contribution: price.price
+        }))
+
+        // Update history (merge with existing)
+        const updatedHistory = [...history]
+        for (const newEntry of newHistoryEntries) {
+          // Check if entry for this month/asset already exists
+          const existingIndex = updatedHistory.findIndex(
+            h => h.month === newEntry.month && h.assetId === newEntry.assetId
+          )
+          if (existingIndex >= 0) {
+            // Update existing
+            updatedHistory[existingIndex] = newEntry
+          } else {
+            // Add new
+            updatedHistory.push(newEntry)
+          }
+        }
+
+        setHistory(updatedHistory)
+        
+        // Show success message with errors (if any)
+        let message = `✅ Se obtuvieron ${result.prices.length} precios. Último día hábil: ${result.lastBusinessDay}`
+        if (result.errors && result.errors.length > 0) {
+          message += ` | Errores: ${result.errors.join('; ')}`
+        }
+        setFetchMessage(message)
+      } else {
+        // Show what specifically failed
+        let errorMsg = result.message || 'No se obtuvieron precios'
+        if (result.errors && result.errors.length > 0) {
+          errorMsg += ` - Detalles: ${result.errors.join('; ')}`
+        }
+        setFetchMessage(`❌ ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Error fetching prices:', error)
+      setFetchMessage(
+        `❌ Error: No se pudo conectar al backend en ${config.backendUrl}`
+      )
+    } finally {
+      setIsFetchingPrices(false)
+      // Clear message after 5 seconds
+      setTimeout(() => setFetchMessage(''), 5000)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <header className="flex justify-between items-start">
@@ -179,10 +268,16 @@ export default function Assets() {
             Administra tu cartera de inversión
           </p>
         </div>
-        <Button variant="primary" onClick={() => handleOpenModal()}>
-          <Plus size={20} className="inline mr-2" />
-          Nuevo Activo
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={handleFetchPrices} disabled={isFetchingPrices}>
+            <RefreshCw size={20} className={`inline mr-2 ${isFetchingPrices ? 'animate-spin' : ''}`} />
+            {isFetchingPrices ? 'Obteniendo...' : 'Obtener NAV Actual'}
+          </Button>
+          <Button variant="primary" onClick={() => handleOpenModal()}>
+            <Plus size={20} className="inline mr-2" />
+            Nuevo Activo
+          </Button>
+        </div>
       </header>
 
       {/* Métricas */}
@@ -198,6 +293,19 @@ export default function Assets() {
           subtitle="Número de activos"
         />
       </div>
+
+      {/* Mensaje de estado del fetch */}
+      {fetchMessage && (
+        <Card className={`${
+          fetchMessage.includes('✅') ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'
+        }`}>
+          <p className={`${
+            fetchMessage.includes('✅') ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
+          }`}>
+            {fetchMessage}
+          </p>
+        </Card>
+      )}
 
       {/* Botón para mostrar/ocultar archivados */}
       {getArchivedCount() > 0 && (
@@ -415,6 +523,26 @@ export default function Assets() {
             onChange={(e) => setFormData({ ...formData, riskLevel: e.target.value })}
             options={riskLevels.map(r => ({ value: r, label: r }))}
           />
+
+          <div className="border-t pt-4 space-y-4">
+            <h3 className="font-semibold text-slate-700 dark:text-slate-300">
+              Identificadores (opcional para obtención automática de precios)
+            </h3>
+
+            <Input
+              label="ISIN (para fondos)"
+              value={formData.isin}
+              onChange={(e) => setFormData({ ...formData, isin: e.target.value })}
+              placeholder="Ej: ES0165151004"
+            />
+
+            <Input
+              label="Ticker (para acciones y crypto)"
+              value={formData.ticker}
+              onChange={(e) => setFormData({ ...formData, ticker: e.target.value })}
+              placeholder="Ej: AAPL, BTC-EUR"
+            />
+          </div>
 
           <div className="border-t pt-4">
             <label className="flex items-center gap-3 cursor-pointer">
